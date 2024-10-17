@@ -387,3 +387,62 @@ def cm_annualcycle(step='monthly', listvals=False):
         newmap = mcolors.ListedColormap(newmap)
     
     return newmap
+
+def cm_diverging_mod(cmap='seismic', cmapsource='mpl', vmin=-1, vmax=1, midpt=0):
+    """
+    Modify diverging colormap with unequal amounts in upper and lower end
+
+    Args:
+        vmin (float): colormap minimum
+        vmax (float): colormap maximum
+        midpt (float): desired mid-point of colormap
+        cmap (str): name of colormap
+        cmapsource (str): source of colormap (mpl or matplotlib for matplotlib, cmo or cmocean for cmocean)
+
+    Raises:
+        ValueError: nans or not-numbers provided for vmin, vmax, or breaks
+        ValueError: values do not increase from vmin -> breaks -> vmax
+        ValueError: number of breakpoints does not match with number of colors in new map
+        ValueError: unrecognized colormap or colormap source
+
+    Returns:
+        object: matplotlib colormap
+    """
+    if cmapsource.lower() in ['mpl', 'matplotlib', 'plt', 'pyplot']:
+        try:
+            cmap = plt.get_cmap(cmap)
+        except:
+            raise ValueError(f'Colormap {cmap} not found in matplotlib.')
+    elif cmapsource.lower() in ['cmo', 'cmocean']:
+        try:
+            cmap = plt.get_cmap(f'cmo.{cmap}')
+        except:
+            raise ValueError(f'Colormap {cmap} not found in cmocean.')
+    else:
+        raise ValueError(f'Colormap source {cmapsource} not supported.')
+    
+    all_nums = np.array([vmin, midpt, vmax])
+    # check that all values are real numbers
+    if not np.all(np.isreal(all_nums)) or np.any(np.isnan(all_nums)):
+        raise ValueError('All values must be real numbers.')
+    # check that all values increase in the right order
+    if np.any(np.diff(all_nums)<0):
+        raise ValueError('All values must be increasing from vmin -> midpt -> vmax')
+    
+    # define interval
+    ni = (vmax-vmin)/100
+    nints0 = int(np.floor((all_nums[1]-all_nums[0])/ni))
+    nints1 = int(np.floor((all_nums[2]-all_nums[1])/ni))
+    if nints0>0:
+        cm0 = cmap(np.linspace(.5*(vmin-midpt)/np.max(np.abs(np.array((vmin, vmax))-midpt)),.5,nints0))
+        if nints1==0:
+            cmfull = cm0
+    if nints1>0:
+        cm1 = cmap(np.linspace(.5,.5+.5*(vmax-midpt)/np.max(np.abs(np.array((vmin, vmax))-midpt)),nints1))
+        if nints0==0:
+            cmfull = cm1
+    if nints0>0 and nints1>0:
+        cmfull = np.vstack((cm0, cm1))
+    
+    newmap = mcolors.LinearSegmentedColormap.from_list('my_colormap',cmfull)
+    return newmap

@@ -31,6 +31,10 @@ Function to modify cyclical colormaps
 
     cm_annualcycle: modified hsv with blues at ends
 
+Function to modify diverging colormaps with uneven lengths on either side of 0 (or other midpoint)
+
+    cm_diverging_mod: accepts any matplotlib or cmocean colormap and modifies based on min, max, mid
+
 """
 
 def cm_oxy_mod(vmin=2, vmax=9, breaks=[3,7.5], red=True, gray=True, yellow=True):
